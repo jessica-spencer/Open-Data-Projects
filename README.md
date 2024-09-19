@@ -1,2 +1,5 @@
 # Open-Data-Projects
-Pet Projects from open data sources
+
+Personal projects from open data sources
+
+
