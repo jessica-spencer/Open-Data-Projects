@@ -9,4 +9,6 @@ Volunteering and Pet Ownership in Edmonton, Canada
 
 Time Series Analysis of US Construction and Household Data
 
+Discrete Choice Modeling on Simulated Data
+
 
