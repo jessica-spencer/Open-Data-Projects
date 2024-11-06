@@ -11,4 +11,6 @@ Time Series Analysis of US Construction and Household Data
 
 Discrete Choice Modeling on Simulated Data
 
+Modular Data Load Class for Child Mind Institute Competition
+
 
