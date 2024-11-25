@@ -1,0 +1,175 @@
+---
+title: "Contraceptive Methods and Age"
+author: "Jessica Spencer"
+output: pdf_document
+date: "September 2024"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Age on Contraceptive Prevalence 
+
+This data set is from a 1987 National Indonesia Contraceptive Prevalence Survey. All observations are married women who were definitely not pregnant or did not know yet. Questions on the survey covered topics regarding socio-economic status and general demographics.
+
+1. Exploratoration of Dataset
+2. Distribution and Correlation Visualization
+3. Relative Odds of Contraceptive Method
+4. Predictive Strength of Age on Contraceptive Method
+
+```{r cars}
+library('ggvis')
+library('tidyverse')
+library('ggplot2')
+
+df = read.csv('data/1987 Indonesia Contraception Prevalence Study.csv')
+head(df)
+```
+
+## Variable Information
+
+Variable Information:
+
+    Age - age of the woman
+    Education - level of education woman has received (1=low, 4=high)
+    Partner Education - level of education partner has received (1=low, 4=high)
+    Number of Children - number of kids mothered by woman
+    Religion=Islam - woman that identify as Muslim (0=No, 1=Yes)
+    Currently Working - woman is currently employed (0=Yes, 1=No)
+    Husbands Occupation - Not specified (categorical 1-4)
+    Standard of Living - based on the standard of living index (1=low, 4=high)
+    Media exposure - quality of media exposure (0=Good, 1=Not good)
+    Contraceptive Method Used - 1=No-use, 2=Long-term, 3=Short-term
+    
+### Exploratory Data Analysis
+
+
+- Description of Dataframe
+- Missingness Check
+- Distribution of Variables
+
+```{r}
+print("Rows x Columns:")
+print(dim(df))
+
+print("Feature Type:")# Data types of the variables
+print(sapply(df, class))
+
+print("Missing Values Per Feature:") #Checking for missing values in the columns
+print(colSums(is.na(df)))
+```
+
+```{r}
+library(tidyverse)
+library(patchwork)
+
+create_numeric_histograms <- function(df, ncol = 3) {
+ df %>%
+   select(where(is.numeric)) %>%
+   pivot_longer(cols = everything()) %>%
+   ggplot(aes(x = value)) +
+   geom_histogram(bins = 30, fill = "blue", color = "black") +
+   facet_wrap(~ name, scales = "free", ncol = ncol) +
+   theme_minimal() +
+   theme(
+     strip.text = element_text(face = "bold"),
+     axis.text = element_text(size = 8),
+     plot.title = element_text(hjust = 0.5)
+   ) +
+   labs(title = "Distribution of Numeric Variables")
+}
+
+create_numeric_histograms(df)
+
+```
+```{r}
+library(corrplot)
+
+
+cor_matrix <- df %>% cor()
+
+corrplot(cor_matrix, 
+        method = "color", 
+        addCoef.col = "black", 
+        tl.col = "black", 
+        tl.srt = 45, 
+        diag = FALSE)
+
+```
+
+##  Impacts of Age on Contraceptive Method Used
+
+Contraceptive Method Used:
+* 1 = No-use
+* 2 = Long-term
+* 3 = Short-term
+
+```{r}
+df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
+#levels(df$contraceptive.method)
+levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
+
+ggplot(df, aes(x = contraceptive.method)) +
+ geom_histogram(stat = "count", fill = "lightblue", color = "black") +
+ theme_minimal() +
+ labs(
+   title = "Distribution of Contraceptive Method Used",
+   x = "Contraceptive",
+   y = "Count"
+ )
+```
+
+```{r}
+dplyr::count(df, contraceptive.method, sort = TRUE)
+```
+There are 3 unequal classes of contraceptive use.  Most women (629 participants) in this sample do not use contraceptives, followed by short term contraceptive use (511 participants), and finally, about twenty-two percent of these women use long term contraceptives (333 participants).
+
+## Relative Odds of Contraception Method
+
+```{r}
+library(nnet)
+model1 = multinom(df$Contraceptive.Method.Used~1)
+summary(model1)
+```
+
+Based on a null "mlogit" model, the relative odds of certain form of Contraceptive Use relative to neither are:
+* P(*Long-Term Contraception*)/P(No Use)=exp(-0.6359864)= *0.529*
+* P(*Short-Term Contraception*)/P(No Use)=exp(-0.2077754)= *0.812*
+
+
+## Predictive Strength of Age
+```{r}
+df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
+#levels(df$contraceptive.method)
+levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
+#df = df %>%group_by(contraceptive.method) %>%mutate(Frequency = n())
+
+ggplot(df, aes(Age, fill = contraceptive.method)) +
+  geom_histogram()
+```
+
+```{r}
+model2=multinom(contraceptive.method ~ Age, data = df)
+```
+
+### For Readability
+
+```{r}
+beta.mat<-coef(model2)
+beta.mat
+```
+
+```{r}
+se.mat <-summary(model2)$standard.errors
+se.mat
+```
+
+```{r}
+library(effects)
+
+plot(Effect("Age",model2),style="stacked")
+# shows a stacked vertical bar chart of pred
+```
+
+Interestingly, it is predicted that using long-term contraception is much higher for younger participants.  As the age in the sample increases, predicted long-term contraceptive use declines.  The other contraceptive uses rise slightly with age.
