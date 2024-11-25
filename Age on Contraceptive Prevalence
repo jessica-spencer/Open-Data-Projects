@@ -1,0 +1,173 @@
+---
+title: "Age on Contraceptive Prevalence"
+author: "Jessica Spencer"
+date: "November, 2024"
+output: html_notebook
+---
+# %% [markdown]
+# ## Age on Contraceptive Prevalence 
+# 
+# This data set is from a 1987 National Indonesia Contraceptive Prevalence Survey. All observations are married women who were definitely not pregnant or did not know yet. Questions on the survey covered topics regarding socio-economic status and general demographics.
+# 
+# 
+# 
+# 
+# 1. Exploratoration of Dataset
+# 2. Distribution and Correlation Visualization
+# 3. Relative Odds of Contraceptive Method
+# 4. Predictive Strength of Age on Contraceptive Method
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:09.253401Z","iopub.execute_input":"2024-11-22T21:08:09.255184Z","iopub.status.idle":"2024-11-22T21:08:09.301827Z","shell.execute_reply":"2024-11-22T21:08:09.299955Z"}}
+library('ggvis')
+library('tidyverse')
+library('ggplot2')
+
+df = read.csv('/kaggle/input/contraceptive-prevalence-survey/1987 Indonesia Contraception Prevalence Study.csv')
+head(df)
+
+# %% [markdown]
+# Variable Information:
+# 
+#     Age - age of the woman
+#     Education - level of education woman has received (1=low, 4=high)
+#     Partner Education - level of education partner has received (1=low, 4=high)
+#     Number of Children - number of kids mothered by woman
+#     Religion=Islam - woman that identify as Muslim (0=No, 1=Yes)
+#     Currently Working - woman is currently employed (0=Yes, 1=No)
+#     Husbands Occupation - Not specified (categorical 1-4)
+#     Standard of Living - based on the standard of living index (1=low, 4=high)
+#     Media exposure - quality of media exposure (0=Good, 1=Not good)
+#     Contraceptive Method Used - 1=No-use, 2=Long-term, 3=Short-term
+
+# %% [markdown]
+# ### Exploratory Data Analysis
+# 
+# 
+# - Description of Dataframe
+# - Missingness Check
+# - Distribution of Variables
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:09.305153Z","iopub.execute_input":"2024-11-22T21:08:09.306700Z","iopub.status.idle":"2024-11-22T21:08:09.342340Z","shell.execute_reply":"2024-11-22T21:08:09.340394Z"}}
+print("Rows x Columns:")
+print(dim(df))
+
+print("Feature Type:")# Data types of the variables
+print(sapply(df, class))
+
+print("Missing Values Per Feature:") #Checking for missing values in the columns
+print(colSums(is.na(df)))
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:09.345104Z","iopub.execute_input":"2024-11-22T21:08:09.346657Z","iopub.status.idle":"2024-11-22T21:08:10.550138Z","shell.execute_reply":"2024-11-22T21:08:10.548007Z"}}
+library(tidyverse)
+library(patchwork)
+
+create_numeric_histograms <- function(df, ncol = 3) {
+ df %>%
+   select(where(is.numeric)) %>%
+   pivot_longer(cols = everything()) %>%
+   ggplot(aes(x = value)) +
+   geom_histogram(bins = 30, fill = "blue", color = "black") +
+   facet_wrap(~ name, scales = "free", ncol = ncol) +
+   theme_minimal() +
+   theme(
+     strip.text = element_text(face = "bold"),
+     axis.text = element_text(size = 8),
+     plot.title = element_text(hjust = 0.5)
+   ) +
+   labs(title = "Distribution of Numeric Variables")
+}
+
+create_numeric_histograms(df)
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:10.553159Z","iopub.execute_input":"2024-11-22T21:08:10.554767Z","iopub.status.idle":"2024-11-22T21:08:10.693553Z","shell.execute_reply":"2024-11-22T21:08:10.691635Z"}}
+library(corrplot)
+
+
+cor_matrix <- df %>% cor()
+
+corrplot(cor_matrix, 
+        method = "color", 
+        type = "full", 
+        addCoef.col = "black", 
+        tl.col = "black", 
+        tl.srt = 45, 
+        diag = FALSE)
+
+# %% [markdown]
+# ##  Impacts of Age on Contraceptive Method Used
+# 
+# Contraceptive Method Used:
+# * 1 = No-use
+# * 2 = Long-term
+# * 3 = Short-term
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:09:55.795864Z","iopub.execute_input":"2024-11-22T21:09:55.797582Z","iopub.status.idle":"2024-11-22T21:09:56.052510Z","shell.execute_reply":"2024-11-22T21:09:56.049792Z"}}
+df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
+#levels(df$contraceptive.method)
+levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
+
+ggplot(df, aes(x = contraceptive.method)) +
+ geom_histogram(stat = "count", fill = "lightblue", color = "black") +
+ theme_minimal() +
+ labs(
+   title = "Distribution of Contraceptive Method Used",
+   x = "Contraceptive",
+   y = "Count"
+ )
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:10:04.325527Z","iopub.execute_input":"2024-11-22T21:10:04.327571Z","iopub.status.idle":"2024-11-22T21:10:04.357467Z","shell.execute_reply":"2024-11-22T21:10:04.355618Z"}}
+dplyr::count(df, contraceptive.method, sort = TRUE)
+
+# %% [markdown]
+# There are 3 unequal classes of contraceptive use.  Most women (629 participants) in this sample do not use contraceptives, followed by short term contraceptive use (511 participants), and finally, about twenty-two percent of these women use long term contraceptives (333 participants). 
+
+# %% [markdown]
+# ## Relative Odds of Contraception Method
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:10.982739Z","iopub.execute_input":"2024-11-22T21:08:10.984172Z","iopub.status.idle":"2024-11-22T21:08:11.006348Z","shell.execute_reply":"2024-11-22T21:08:11.004633Z"}}
+library(nnet)
+model1 = multinom(df$Contraceptive.Method.Used~1)
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:11.008991Z","iopub.execute_input":"2024-11-22T21:08:11.010448Z","iopub.status.idle":"2024-11-22T21:08:11.052453Z","shell.execute_reply":"2024-11-22T21:08:11.050722Z"}}
+summary(model1)
+
+# %% [markdown]
+# Based on a null "mlogit" model, the relative odds of certain form of Contraceptive Use relative to neither are:
+# * P(*Long-Term Contraception*)/P(No Use)=exp(-0.6359864)= *0.529*
+# * P(*Short-Term Contraception*)/P(No Use)=exp(-0.2077754)= *0.812*
+# 
+# 
+# ## Predictive Strength of Age
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:11.055574Z","iopub.execute_input":"2024-11-22T21:08:11.057057Z","iopub.status.idle":"2024-11-22T21:08:11.072088Z","shell.execute_reply":"2024-11-22T21:08:11.070335Z"}}
+df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
+#levels(df$contraceptive.method)
+levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
+#df = df %>%group_by(contraceptive.method) %>%mutate(Frequency = n()) 
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:11.074802Z","iopub.execute_input":"2024-11-22T21:08:11.076307Z","iopub.status.idle":"2024-11-22T21:08:11.407801Z","shell.execute_reply":"2024-11-22T21:08:11.405578Z"}}
+ggplot(df, aes(Age, fill = contraceptive.method)) +
+  geom_histogram()
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:25.123654Z","iopub.execute_input":"2024-11-22T21:08:25.125340Z","iopub.status.idle":"2024-11-22T21:08:25.150131Z","shell.execute_reply":"2024-11-22T21:08:25.148308Z"}}
+model2=multinom(contraceptive.method ~ Age, data = df)
+
+# %% [markdown]
+# ### For Readability...
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:28.054805Z","iopub.execute_input":"2024-11-22T21:08:28.056467Z","iopub.status.idle":"2024-11-22T21:08:28.079908Z","shell.execute_reply":"2024-11-22T21:08:28.077591Z"}}
+beta.mat<-coef(model2)
+beta.mat
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:39.151710Z","iopub.execute_input":"2024-11-22T21:08:39.153367Z","iopub.status.idle":"2024-11-22T21:08:39.223793Z","shell.execute_reply":"2024-11-22T21:08:39.221974Z"}}
+se.mat <-summary(model2)$standard.errors
+se.mat
+
+# %% [code] {"execution":{"iopub.status.busy":"2024-11-22T21:08:42.956809Z","iopub.execute_input":"2024-11-22T21:08:42.958385Z","iopub.status.idle":"2024-11-22T21:08:43.174900Z","shell.execute_reply":"2024-11-22T21:08:43.173029Z"}}
+plot(Effect("Age",model2),style="stacked")
+# shows a stacked vertical bar chart of pred
+
+# %% [markdown]
+# Interestingly, it is predicted that using long-term contraception is much higher for younger participants.  As the age in the sample increases, predicted long-term contraceptive use declines.  The other contraceptive uses rise slightly with age. 
+
+# %% [code]
