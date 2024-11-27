@@ -1,5 +1,5 @@
 ---
-title: "Contraceptive Methods and Age"
+title: "Increasing Contraceptive Prevalence - Researching Interventions"
 author: "Jessica Spencer"
 output: pdf_document
 date: "September 2024"
@@ -9,14 +9,23 @@ date: "September 2024"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Age on Contraceptive Prevalence 
+## Increasing Contraceptive Prevalence - Researching Interventions
 
-This data set is from a 1987 National Indonesia Contraceptive Prevalence Survey. All observations are married women who were definitely not pregnant or did not know yet. Questions on the survey covered topics regarding socio-economic status and general demographics.
+Data: This data set is from a 1987 National Indonesia Contraceptive Prevalence Survey. All observations are married women who were definitely not pregnant or did not know yet. Questions on the survey covered topics regarding socio-economic status and general demographics.
 
-1. Exploratoration of Dataset
-2. Distribution and Correlation Visualization
+Question: What can increase the use of contraception methods for women in this population?
+
+Method: Multiple logistic regression
+
+Conclusion: Through this analysis, I found that education is a great intervention to increase the use of contraceptives in women. 
+
+1. Exploratory Data Analysis
+  a. Selection of variables to investigate
 3. Relative Odds of Contraceptive Method
-4. Predictive Strength of Age on Contraceptive Method
+4. Predictive Strength of Independant Variables
+6. Conclusions and Recommendations
+
+
 
 ```{r cars}
 library('ggvis')
@@ -31,16 +40,16 @@ head(df)
 
 Variable Information:
 
-    Age - age of the woman
-    Education - level of education woman has received (1=low, 4=high)
-    Partner Education - level of education partner has received (1=low, 4=high)
-    Number of Children - number of kids mothered by woman
-    Religion=Islam - woman that identify as Muslim (0=No, 1=Yes)
-    Currently Working - woman is currently employed (0=Yes, 1=No)
-    Husbands Occupation - Not specified (categorical 1-4)
-    Standard of Living - based on the standard of living index (1=low, 4=high)
-    Media exposure - quality of media exposure (0=Good, 1=Not good)
-    Contraceptive Method Used - 1=No-use, 2=Long-term, 3=Short-term
+    * Age - age of the woman
+    * Education - level of education woman has received (1=low, 4=high)
+    * Partner Education - level of education partner has received (1=low, 4=high)
+    * Number of Children - number of kids mothered by woman
+    * Religion=Islam - woman that identify as Muslim (0=No, 1=Yes)
+    * Currently Working - woman is currently employed (0=Yes, 1=No)
+    * Husbands Occupation - Not specified (categorical 1-4)
+    * Standard of Living - based on the standard of living index (1=low, 4=high)
+    * Media exposure - quality of media exposure (0=Good, 1=Not good)
+    * Contraceptive Method Used - 1=No-use, 2=Long-term, 3=Short-term
     
 ### Exploratory Data Analysis
 
@@ -48,6 +57,7 @@ Variable Information:
 - Description of Dataframe
 - Missingness Check
 - Distribution of Variables
+- Correlation between Variables
 
 ```{r}
 print("Rows x Columns:")
@@ -59,6 +69,40 @@ print(sapply(df, class))
 print("Missing Values Per Feature:") #Checking for missing values in the columns
 print(colSums(is.na(df)))
 ```
+
+#### Inspecting Contraceptive Method
+
+Creating a new variable to reflect the following: 
+
+Contraceptive Method Used:
+* 1 = No-use
+* 2 = Long-term
+* 3 = Short-term
+
+
+```{r}
+df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
+#levels(df$contraceptive.method)
+levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
+
+ggplot(df, aes(x = contraceptive.method)) +
+ geom_histogram(stat = "count", fill = "lightblue", color = "black") +
+ theme_minimal() +
+ labs(
+   title = "Distribution of Contraceptive Method Used",
+   x = "Contraceptive",
+   y = "Count"
+ )
+```
+
+```{r}
+dplyr::count(df, contraceptive.method, sort = TRUE)
+```
+There are 3 unequal classes of contraceptive use.  Most women (629 participants) in this sample do not use contraceptives, followed by short term contraceptive use (511 participants), and finally, about twenty-two percent of these women use long term contraceptives (333 participants).
+
+#### Investigating Other Variables
+
+Looking at distributions and correlations to decide what to focus on for this analysis
 
 ```{r}
 library(tidyverse)
@@ -83,47 +127,21 @@ create_numeric_histograms <- function(df, ncol = 3) {
 create_numeric_histograms(df)
 
 ```
+
+
+
 ```{r}
 library(corrplot)
 
 
-cor_matrix <- df %>% cor()
+cor_matrix <- df %>%select(where(is.numeric))  %>% cor()
 
-corrplot(cor_matrix, 
-        method = "color", 
-        addCoef.col = "black", 
-        tl.col = "black", 
-        tl.srt = 45, 
-        diag = FALSE)
+corrplot(cor_matrix,method="number",number.cex=0.5)
 
 ```
+The variables with the largest correlation to contraceptive method used are Age, Education and Partner Education. Media Exposure also has some negative correlation, but the class is particularly unbalanced.  Instead,  I'm interested in Education and Partner Education, as these can be intervened upon to increase use of contraception and family planning in this population. Age I'll inspect as an explanatory variable. 
 
-##  Impacts of Age on Contraceptive Method Used
 
-Contraceptive Method Used:
-* 1 = No-use
-* 2 = Long-term
-* 3 = Short-term
-
-```{r}
-df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
-#levels(df$contraceptive.method)
-levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
-
-ggplot(df, aes(x = contraceptive.method)) +
- geom_histogram(stat = "count", fill = "lightblue", color = "black") +
- theme_minimal() +
- labs(
-   title = "Distribution of Contraceptive Method Used",
-   x = "Contraceptive",
-   y = "Count"
- )
-```
-
-```{r}
-dplyr::count(df, contraceptive.method, sort = TRUE)
-```
-There are 3 unequal classes of contraceptive use.  Most women (629 participants) in this sample do not use contraceptives, followed by short term contraceptive use (511 participants), and finally, about twenty-two percent of these women use long term contraceptives (333 participants).
 
 ## Relative Odds of Contraception Method
 
@@ -134,11 +152,16 @@ summary(model1)
 ```
 
 Based on a null "mlogit" model, the relative odds of certain form of Contraceptive Use relative to neither are:
+
 * P(*Long-Term Contraception*)/P(No Use)=exp(-0.6359864)= *0.529*
+
 * P(*Short-Term Contraception*)/P(No Use)=exp(-0.2077754)= *0.812*
 
 
+There is a higher probability of Short Term Contraceptive use, than Long Term Contraceptive use, relative to None. However, it is more likely that no contraception is used. 
+
 ## Predictive Strength of Age
+
 ```{r}
 df$contraceptive.method <- as.factor(df$Contraceptive.Method.Used)
 #levels(df$contraceptive.method)
@@ -146,30 +169,167 @@ levels(df$contraceptive.method) <- c("None", "LongTerm", "ShortTerm")
 #df = df %>%group_by(contraceptive.method) %>%mutate(Frequency = n())
 
 ggplot(df, aes(Age, fill = contraceptive.method)) +
-  geom_histogram()
+  geom_histogram() + ggtitle("Age and Contraception Method")
 ```
 
 ```{r}
 model2=multinom(contraceptive.method ~ Age, data = df)
+summary(model2)
 ```
 
-### For Readability
-
-```{r}
-beta.mat<-coef(model2)
-beta.mat
-```
 
 ```{r}
-se.mat <-summary(model2)$standard.errors
-se.mat
+z <- summary(model2)$coefficients/summary(model2)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
 ```
+
+
+With a p-value of 0.05 , the Age term is significant. 
+
+#### Recovering Relative probabilities
+
+Log(P(LongTerm)/P(None))=-1.114493+0.01411370*Age 
+
+Log(P(ShortTerm)/P(None))=1.374399-0.04975711*Age
+
+
+
+```{r}
+print(paste("odds ratio of long term contraception to no contraception for a 29 year old:",str(exp(1.114493+(0.01411370*29)))))
+
+```
+
+```{r}
+print("odds ratio of short term contraception to no contraception for an 18 year old:")
+exp(1.374399+ (-0.04975711*18))
+```
+
+Graphing the probability of Contraceptive Method use across ages: 
+
+```{r}
+newdata = as.data.frame(matrix(0,48,1))
+names(newdata) = c("Age")
+newdata[,1] = 12:59
+pred = predict(model2,newdata=newdata, type="probs")
+
+new_predict <- cbind(newdata, pred)
+#head(new_predict)
+prob_plot <- new_predict %>%
+  pivot_longer(2:4, names_to = "ContraceptionMethod", values_to = "prob")
+
+ggplot(prob_plot, aes(x=Age, y=prob, group=ContraceptionMethod)) + 
+  geom_line(aes(color=ContraceptionMethod)) + 
+  ggtitle("Probability of Contraception Methods Used Across Ages")
+
+```
+Interestingly, it is predicted that using short-term contraception is much higher for younger participants, at greater than 40% probability of usage for those under 20 years old.  As the age in the sample increases, predicted long-term contraceptive use increases, and short-term declines. Predicted use of no contraception surpasses short term around the age of 30.
+
+
+Following is the same chart, but broken out into contraceptive method:
 
 ```{r}
 library(effects)
 
-plot(Effect("Age",model2),style="stacked")
-# shows a stacked vertical bar chart of pred
+plot(Effect("Age",model2))
 ```
 
-Interestingly, it is predicted that using long-term contraception is much higher for younger participants.  As the age in the sample increases, predicted long-term contraceptive use declines.  The other contraceptive uses rise slightly with age.
+### Education and Contraceptive Type
+
+Education and Partner's Education are strongly correlated. First I will add them separately, then as an interaction term if appropriate.
+
+```{r}
+model3=multinom(contraceptive.method ~ Age + Education + Partner.Education, data = df)
+summary(model3)
+```
+Adding these terms has reduced the effect of age significantly.
+
+The Partner Education variable seems weak. It is a very small coefficient, with a relatively large standard error. 
+
+it seems like education of the women has a large positive effect on the relative odds of choosing Long Term contraception over no contraception. It has a smaller positive effect on the relative odds of choosing short term education. 
+
+Interestingly, the education of the partner has a small negative effect on the relative odds of choosing long term contraception, and a small positive effect on relative odds of choosing short term contraception. However, the effect of this is very small, with a huge confidence interval. With a significance test we find that this does not pass the alpha level (0.05). Therefore, I'm dropping this variable
+
+```{r}
+z <- summary(model3)$coefficients/summary(model3)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+Education and Age are a significant term, but Partner.Education is not (alpha level 0.05). A Dropping Partner Education
+
+
+```{r}
+model4=multinom(contraceptive.method ~ Age + Education, data = df)
+summary(model4)
+```
+
+```{r}
+z <- summary(model4)$coefficients/summary(model4)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+Both coefficients pass the alpha level of 0.05
+
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+### Average Predicted Probabilities for Education:
+
+
+Here is the effect education has on the probability of using each contraceptive method:
+
+```{r}
+plot(Effect("Education",model4))
+```
+Another way to look at this is for one age. Here is a plot of the generalized probability of 25 year olds in this population, and their contraceptive method choice: 
+
+```{r}
+newdata = as.data.frame(matrix(0,4,2))
+names(newdata) = c("Education","Age")
+newdata[,1] = c(1,2,3,4)
+newdata[,2] = 25
+pred = predict(model4,newdata=newdata, type="probs")
+
+new_predict <- cbind(newdata, pred)
+#head(new_predict)
+prob_plot <- new_predict %>%
+  pivot_longer(3:5, names_to = "ContraceptionMethod", values_to = "prob")
+head(prob_plot)
+
+ggplot(prob_plot, aes(x=Education, y=prob, group=ContraceptionMethod)) + 
+  geom_line(aes(color=ContraceptionMethod)) + 
+  ggtitle("Probability of Contraception Method For A 25 Year Old  - Across Education Levels")
+
+```
+
+There is a steep negative association between education and the use of no Contraception, and a positive association between education and long term contraceptive choice for a 25 year old similar to a participant in this dataset. The probability of short term contraception use rises slightly with higher education. 
+
+
+Now to combine both Age and Education.  This graph shows how Education impacts probability of contraceptive choice across ages: 
+
+```{r}
+library(reshape2)
+
+newd <- data.frame(Education = rep(c(1,2,3,4), each = 48), Age = rep(c(12:59),4))
+
+pp.ed <- cbind(newd, predict(model4, newdata = newd, type = "probs", se = TRUE))
+
+by(pp.ed[, 3:5], pp.ed$Education, colMeans)
+
+lpp <- melt(pp.ed, id.vars = c("Education", "Age"), value.name = "probability")
+
+ggplot(lpp, aes(x = Age, y = probability, color = Education)) + geom_line(aes(group=Education)) + facet_grid(variable ~.) +
+  ggtitle("Predicted Contraception Method Across Education Levels and Ages")
+```
+
+As age and education increase, so does the probability of  using long term contraception. 
+
+
+This analysis shows that education level is a great way to increase the use of contraceptives in women across ages. We can see here that those with high levels of education are the least likely to use no contraceptives, and the most likely to use long or short term contraceptives.
+  
