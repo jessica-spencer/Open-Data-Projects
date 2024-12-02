@@ -50,6 +50,13 @@ Education emerges as a critical intervention for increasing contraceptive use am
 
 [Learn more about the benefits of contraceptive choice](https://www.guttmacher.org/gpr/2017/11/why-family-planning-policy-and-practice-must-guarantee-true-choice-contraceptive-methods)
 
+Source: This data set is from a 1987 National Indonesia Contraceptive Prevalence Survey. All observations are married women who were definitely not pregnant or did not know yet. Questions on the survey covered topics regarding socio-economic status and general demographics.
+
+*Links:*
+1. [Available on Kaggle](https://www.kaggle.com/datasets/joelzcharia/contraceptive-prevalence-survey)
+2. [Available at the UC Irvine Machine Learning Library](https://archive.ics.uci.edu/dataset/30/contraceptive+method+choice)
+
+
 ---
 
 
